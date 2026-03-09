@@ -46,3 +46,11 @@ window.addEventListener('resize', () => {
   renderer.onResize();
   viewport.onResize();
 });
+
+function requestFullscreen() {
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+  if (req) req.call(el).catch(() => {});
+}
+
+document.addEventListener('pointerdown', requestFullscreen, { once: true });
