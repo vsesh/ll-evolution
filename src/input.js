@@ -1,15 +1,23 @@
+const DRAG_THRESHOLD = 5;
+
 export class Input {
   constructor(canvas, viewport, simulation) {
     this.canvas = canvas;
     this.viewport = viewport;
     this.simulation = simulation;
-    this._dragging = false;
-    this._erasing = false;
-    this._pendingErase = false;
-    this._lastX = 0;
-    this._lastY = 0;
-    this._moveStart = { x: 0, y: 0 };
-    this._movedPx = 0;
+
+    this._pointers = new Map();
+    this._pinchDist = null;
+    this._pinchMidX = 0;
+    this._pinchMidY = 0;
+
+    this._singleStartX = 0;
+    this._singleStartY = 0;
+    this._singleLastX = 0;
+    this._singleLastY = 0;
+    this._singleMoved = false;
+    this._singleIsTouch = false;
+
     this._bind();
   }
 
@@ -33,53 +41,108 @@ export class Input {
   _onPointerDown(e) {
     e.preventDefault();
     this.canvas.setPointerCapture(e.pointerId);
-    this._lastX = e.clientX;
-    this._lastY = e.clientY;
+    this._pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    const moved = { x: e.clientX, y: e.clientY };
-    this._moveStart = moved;
-    this._movedPx = 0;
+    if (this._pointers.size === 1) {
+      this._singleStartX = e.clientX;
+      this._singleStartY = e.clientY;
+      this._singleLastX = e.clientX;
+      this._singleLastY = e.clientY;
+      this._singleMoved = false;
+      this._singleIsTouch = e.pointerType === 'touch';
+    }
 
-    if (e.button === 0) {
-      this._pendingErase = true;
-      this._dragging = false;
-      this._erasing = false;
-    } else {
-      this._dragging = true;
-      this._erasing = false;
-      this._pendingErase = false;
+    if (this._pointers.size === 2) {
+      this._pinchDist = this._getPinchDist();
+      const mid = this._getPinchMid();
+      this._pinchMidX = mid.x;
+      this._pinchMidY = mid.y;
     }
   }
 
   _onPointerMove(e) {
-    if (this._pendingErase) {
-      const dx = e.clientX - this._moveStart.x;
-      const dy = e.clientY - this._moveStart.y;
-      if (Math.sqrt(dx * dx + dy * dy) > 5) {
-        this._pendingErase = false;
-        this._dragging = true;
+    if (!this._pointers.has(e.pointerId)) return;
+    this._pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (this._pointers.size === 2) {
+      const newDist = this._getPinchDist();
+      if (this._pinchDist && newDist > 0) {
+        const factor = newDist / this._pinchDist;
+        const rect = this.canvas.getBoundingClientRect();
+        const mid = this._getPinchMid();
+        this.viewport.zoom(factor, mid.x - rect.left, mid.y - rect.top);
+      }
+      this._pinchDist = newDist;
+
+      const mid = this._getPinchMid();
+      const dx = mid.x - this._pinchMidX;
+      const dy = mid.y - this._pinchMidY;
+      if (dx !== 0 || dy !== 0) this.viewport.pan(dx, dy);
+      this._pinchMidX = mid.x;
+      this._pinchMidY = mid.y;
+      return;
+    }
+
+    if (this._pointers.size === 1) {
+      const dx = e.clientX - this._singleLastX;
+      const dy = e.clientY - this._singleLastY;
+      const totalDx = e.clientX - this._singleStartX;
+      const totalDy = e.clientY - this._singleStartY;
+
+      if (!this._singleMoved && Math.sqrt(totalDx * totalDx + totalDy * totalDy) > DRAG_THRESHOLD) {
+        this._singleMoved = true;
+      }
+
+      if (this._singleMoved) {
+        this.viewport.pan(dx, dy);
+      }
+
+      this._singleLastX = e.clientX;
+      this._singleLastY = e.clientY;
+
+      if (!this._singleIsTouch) {
+        if (e.buttons & 1) {
+          this._erase(e.clientX, e.clientY);
+        }
       }
     }
-
-    if (this._dragging) {
-      const dx = e.clientX - this._lastX;
-      const dy = e.clientY - this._lastY;
-      this.viewport.pan(dx, dy);
-    } else if (this._erasing) {
-      this._erase(e.clientX, e.clientY);
-    }
-
-    this._lastX = e.clientX;
-    this._lastY = e.clientY;
   }
 
   _onPointerUp(e) {
-    if (this._pendingErase) {
+    const wasSingle = this._pointers.size === 1;
+    this._pointers.delete(e.pointerId);
+
+    if (wasSingle && !this._singleMoved) {
       this._erase(e.clientX, e.clientY);
     }
-    this._dragging = false;
-    this._erasing = false;
-    this._pendingErase = false;
+
+    if (this._pointers.size < 2) {
+      this._pinchDist = null;
+    }
+
+    if (this._pointers.size === 1) {
+      const remaining = this._pointers.values().next().value;
+      this._singleLastX = remaining.x;
+      this._singleLastY = remaining.y;
+      this._singleStartX = remaining.x;
+      this._singleStartY = remaining.y;
+      this._singleMoved = false;
+    }
+  }
+
+  _getPinchDist() {
+    const pts = [...this._pointers.values()];
+    const dx = pts[0].x - pts[1].x;
+    const dy = pts[0].y - pts[1].y;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  _getPinchMid() {
+    const pts = [...this._pointers.values()];
+    return {
+      x: (pts[0].x + pts[1].x) / 2,
+      y: (pts[0].y + pts[1].y) / 2,
+    };
   }
 
   _erase(cx, cy) {
