@@ -53,4 +53,7 @@ function requestFullscreen() {
   if (req) req.call(el).catch(() => {});
 }
 
-document.addEventListener('pointerdown', requestFullscreen, { once: true, capture: true });
+document.getElementById('btn-fullscreen').addEventListener('pointerdown', e => {
+  e.stopPropagation();
+  requestFullscreen();
+});

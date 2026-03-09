@@ -20,13 +20,51 @@
 
     #canvas {
       display: block;
-      cursor: crosshair;
+      cursor: none;
       touch-action: none;
+    }
+
+    #btn-fullscreen {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 44px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s;
+    }
+
+    #btn-fullscreen:hover {
+      background: rgba(255, 255, 255, 0.28);
+    }
+
+    #erase-cursor {
+      position: fixed;
+      pointer-events: none;
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      display: none;
+      z-index: 200;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
     }
   </style>
 </head>
 <body>
   <canvas id="canvas"></canvas>
+  <button id="btn-fullscreen" title="Fullscreen">&#x26F6;</button>
+  <div id="erase-cursor"></div>
   <script type="module" src="src/main.js"></script>
 </body>
 </html>

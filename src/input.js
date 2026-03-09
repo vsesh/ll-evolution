@@ -1,5 +1,3 @@
-const DRAG_THRESHOLD = 5;
-
 export class Input {
   constructor(canvas, viewport, simulation) {
     this.canvas = canvas;
@@ -11,12 +9,14 @@ export class Input {
     this._pinchMidX = 0;
     this._pinchMidY = 0;
 
-    this._singleStartX = 0;
-    this._singleStartY = 0;
-    this._singleLastX = 0;
-    this._singleLastY = 0;
-    this._singleMoved = false;
-    this._singleIsTouch = false;
+    this._erasing = false;
+    this._panAfterPinch = false;
+
+    this._rightActive = false;
+    this._rightLastX = 0;
+    this._rightLastY = 0;
+
+    this._cursorEl = document.getElementById('erase-cursor');
 
     this._bind();
   }
@@ -43,28 +43,35 @@ export class Input {
     this.canvas.setPointerCapture(e.pointerId);
     this._pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    if (this._pointers.size === 1) {
-      this._singleStartX = e.clientX;
-      this._singleStartY = e.clientY;
-      this._singleLastX = e.clientX;
-      this._singleLastY = e.clientY;
-      this._singleMoved = false;
-      this._singleIsTouch = e.pointerType === 'touch';
-    }
-
-    if (this._pointers.size === 2) {
+    if (this._pointers.size >= 2) {
+      this._erasing = false;
+      this._panAfterPinch = true;
+      this._hideCursor();
       this._pinchDist = this._getPinchDist();
       const mid = this._getPinchMid();
       this._pinchMidX = mid.x;
       this._pinchMidY = mid.y;
+      return;
     }
+
+    if (e.pointerType === 'mouse' && e.button === 2) {
+      this._rightActive = true;
+      this._rightLastX = e.clientX;
+      this._rightLastY = e.clientY;
+      return;
+    }
+
+    this._erasing = true;
+    this._panAfterPinch = false;
+    this._eraseAtClient(e.clientX, e.clientY);
+    this._showCursor(e.clientX, e.clientY);
   }
 
   _onPointerMove(e) {
     if (!this._pointers.has(e.pointerId)) return;
     this._pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    if (this._pointers.size === 2) {
+    if (this._pointers.size >= 2) {
       const newDist = this._getPinchDist();
       if (this._pinchDist && newDist > 0) {
         const factor = newDist / this._pinchDist;
@@ -84,49 +91,44 @@ export class Input {
     }
 
     if (this._pointers.size === 1) {
-      const dx = e.clientX - this._singleLastX;
-      const dy = e.clientY - this._singleLastY;
-      const totalDx = e.clientX - this._singleStartX;
-      const totalDy = e.clientY - this._singleStartY;
-
-      if (!this._singleMoved && Math.sqrt(totalDx * totalDx + totalDy * totalDy) > DRAG_THRESHOLD) {
-        this._singleMoved = true;
+      if (this._rightActive && e.pointerType === 'mouse' && (e.buttons & 2)) {
+        const dx = e.clientX - this._rightLastX;
+        const dy = e.clientY - this._rightLastY;
+        if (dx !== 0 || dy !== 0) this.viewport.pan(dx, dy);
+        this._rightLastX = e.clientX;
+        this._rightLastY = e.clientY;
+        return;
       }
 
-      if (this._singleMoved) {
-        this.viewport.pan(dx, dy);
-      }
-
-      this._singleLastX = e.clientX;
-      this._singleLastY = e.clientY;
-
-      if (!this._singleIsTouch) {
-        if (e.buttons & 1) {
-          this._erase(e.clientX, e.clientY);
-        }
+      if (this._erasing) {
+        this._eraseAtClient(e.clientX, e.clientY);
+        this._updateCursor(e.clientX, e.clientY);
       }
     }
   }
 
   _onPointerUp(e) {
-    const wasSingle = this._pointers.size === 1;
     this._pointers.delete(e.pointerId);
 
-    if (wasSingle && !this._singleMoved) {
-      this._erase(e.clientX, e.clientY);
+    if (e.pointerType === 'mouse' && e.button === 2) {
+      this._rightActive = false;
+      return;
+    }
+
+    if (this._pointers.size === 0) {
+      this._erasing = false;
+      this._panAfterPinch = false;
+      this._hideCursor();
+      return;
     }
 
     if (this._pointers.size < 2) {
       this._pinchDist = null;
     }
 
-    if (this._pointers.size === 1) {
-      const remaining = this._pointers.values().next().value;
-      this._singleLastX = remaining.x;
-      this._singleLastY = remaining.y;
-      this._singleStartX = remaining.x;
-      this._singleStartY = remaining.y;
-      this._singleMoved = false;
+    if (this._pointers.size === 1 && this._panAfterPinch) {
+      this._erasing = false;
+      this._hideCursor();
     }
   }
 
@@ -145,10 +147,30 @@ export class Input {
     };
   }
 
-  _erase(cx, cy) {
+  _getEraseRadius() {
+    return Math.max(2, Math.round(30 / this.viewport.scale));
+  }
+
+  _eraseAtClient(cx, cy) {
     const rect = this.canvas.getBoundingClientRect();
     const { x, y } = this.viewport.canvasToGrid(cx - rect.left, cy - rect.top);
-    const r = Math.max(1, Math.floor(3 / this.viewport.scale));
-    this.simulation.clearCircle(x, y, r);
+    this.simulation.clearCircle(x, y, this._getEraseRadius());
+  }
+
+  _showCursor(cx, cy) {
+    this._cursorEl.style.display = 'block';
+    this._updateCursor(cx, cy);
+  }
+
+  _hideCursor() {
+    this._cursorEl.style.display = 'none';
+  }
+
+  _updateCursor(cx, cy) {
+    const sizePx = this._getEraseRadius() * this.viewport.scale * 2;
+    this._cursorEl.style.width = sizePx + 'px';
+    this._cursorEl.style.height = sizePx + 'px';
+    this._cursorEl.style.left = cx + 'px';
+    this._cursorEl.style.top = cy + 'px';
   }
 }
