@@ -53,4 +53,4 @@ function requestFullscreen() {
   if (req) req.call(el).catch(() => {});
 }
 
-document.addEventListener('pointerdown', requestFullscreen, { once: true });
+document.addEventListener('pointerdown', requestFullscreen, { once: true, capture: true });

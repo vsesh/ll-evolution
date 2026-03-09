@@ -122,6 +122,19 @@ export class Simulation {
     }
   }
 
+  clearCircle(cx, cy, r) {
+    const r2 = r * r;
+    for (let y = Math.max(0, cy - r); y <= Math.min(GRID_H - 1, cy + r); y++) {
+      for (let x = Math.max(0, cx - r); x <= Math.min(GRID_W - 1, cx + r); x++) {
+        const dx = x - cx;
+        const dy = y - cy;
+        if (dx * dx + dy * dy <= r2) {
+          this.grid[y * GRID_W + x] = 0;
+        }
+      }
+    }
+  }
+
   serialize() {
     return {
       tick: this.tick,

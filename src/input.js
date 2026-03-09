@@ -149,6 +149,6 @@ export class Input {
     const rect = this.canvas.getBoundingClientRect();
     const { x, y } = this.viewport.canvasToGrid(cx - rect.left, cy - rect.top);
     const r = Math.max(1, Math.floor(3 / this.viewport.scale));
-    this.simulation.clearRect(x - r, y - r, x + r, y + r);
+    this.simulation.clearCircle(x, y, r);
   }
 }
