@@ -13,15 +13,15 @@ function hslToRgb(h, s, l) {
 }
 
 export const COLOR_RGBA = new Uint32Array(NUM_COLORS + 1);
-export const COLOR_CSS = ['#000000'];
+export const COLOR_CSS = ['rgb(28,26,38)'];
 
 for (let i = 1; i <= NUM_COLORS; i++) {
   const hue = ((i - 1) * HUE_STEP) % 360;
-  const [r, g, b] = hslToRgb(hue, 90, 55);
+  const [r, g, b] = hslToRgb(hue, 50, 75);
   COLOR_RGBA[i] = (255 << 24) | (b << 16) | (g << 8) | r;
   COLOR_CSS.push(`rgb(${r},${g},${b})`);
 }
-COLOR_RGBA[0] = (255 << 24) | 0;
+COLOR_RGBA[0] = (255 << 24) | (38 << 16) | (26 << 8) | 28;
 
 export function colorDistance(a, b) {
   const diff = Math.abs(a - b);
