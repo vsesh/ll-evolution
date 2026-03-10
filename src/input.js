@@ -74,6 +74,14 @@ export class Input {
     this._tapStartX = e.clientX;
     this._tapStartY = e.clientY;
 
+    if (e.pointerType === 'mouse') {
+      this._erasing = true;
+      this._panAfterPinch = false;
+      this._eraseAtClient(e.clientX, e.clientY);
+      this._showCursor(e.clientX, e.clientY);
+      return;
+    }
+
     const now = performance.now();
     const dx = e.clientX - this._lastTapX;
     const dy = e.clientY - this._lastTapY;
