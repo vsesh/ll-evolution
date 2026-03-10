@@ -1,5 +1,6 @@
 const DOUBLE_TAP_MS = 300;
 const DOUBLE_TAP_PX = 40;
+const DRAG_THRESHOLD = 5;
 
 export class Input {
   constructor(canvas, viewport, simulation) {
@@ -13,17 +14,16 @@ export class Input {
     this._pinchMidY = 0;
 
     this._erasing = false;
-    this._panAfterPinch = false;
+
+    this._singleLastX = 0;
+    this._singleLastY = 0;
+    this._singleStartX = 0;
+    this._singleStartY = 0;
+    this._singleMoved = false;
 
     this._lastTapTime = 0;
     this._lastTapX = 0;
     this._lastTapY = 0;
-    this._tapStartX = 0;
-    this._tapStartY = 0;
-
-    this._rightActive = false;
-    this._rightLastX = 0;
-    this._rightLastY = 0;
 
     this._cursorEl = document.getElementById('erase-cursor');
 
@@ -54,7 +54,6 @@ export class Input {
 
     if (this._pointers.size >= 2) {
       this._erasing = false;
-      this._panAfterPinch = true;
       this._hideCursor();
       this._lastTapTime = 0;
       this._pinchDist = this._getPinchDist();
@@ -64,33 +63,20 @@ export class Input {
       return;
     }
 
-    if (e.pointerType === 'mouse' && e.button === 2) {
-      this._rightActive = true;
-      this._rightLastX = e.clientX;
-      this._rightLastY = e.clientY;
-      return;
-    }
-
-    this._tapStartX = e.clientX;
-    this._tapStartY = e.clientY;
-
-    if (e.pointerType === 'mouse') {
-      this._erasing = true;
-      this._panAfterPinch = false;
-      this._eraseAtClient(e.clientX, e.clientY);
-      this._showCursor(e.clientX, e.clientY);
-      return;
-    }
+    this._singleStartX = e.clientX;
+    this._singleStartY = e.clientY;
+    this._singleLastX = e.clientX;
+    this._singleLastY = e.clientY;
+    this._singleMoved = false;
 
     const now = performance.now();
     const dx = e.clientX - this._lastTapX;
     const dy = e.clientY - this._lastTapY;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    const isDoubleTap = (now - this._lastTapTime) < DOUBLE_TAP_MS && dist < DOUBLE_TAP_PX;
+    const isDoubleTap = (now - this._lastTapTime) < DOUBLE_TAP_MS
+      && Math.sqrt(dx * dx + dy * dy) < DOUBLE_TAP_PX;
 
     if (isDoubleTap) {
       this._erasing = true;
-      this._panAfterPinch = false;
       this._lastTapTime = 0;
       this._eraseAtClient(e.clientX, e.clientY);
       this._showCursor(e.clientX, e.clientY);
@@ -121,53 +107,46 @@ export class Input {
     }
 
     if (this._pointers.size === 1) {
-      if (this._rightActive && e.pointerType === 'mouse' && (e.buttons & 2)) {
-        const dx = e.clientX - this._rightLastX;
-        const dy = e.clientY - this._rightLastY;
-        if (dx !== 0 || dy !== 0) this.viewport.pan(dx, dy);
-        this._rightLastX = e.clientX;
-        this._rightLastY = e.clientY;
-        return;
+      const dx = e.clientX - this._singleLastX;
+      const dy = e.clientY - this._singleLastY;
+      const totalDx = e.clientX - this._singleStartX;
+      const totalDy = e.clientY - this._singleStartY;
+
+      if (!this._singleMoved && Math.sqrt(totalDx * totalDx + totalDy * totalDy) > DRAG_THRESHOLD) {
+        this._singleMoved = true;
+        if (!this._erasing) {
+          this._lastTapTime = 0;
+        }
       }
 
       if (this._erasing) {
         this._eraseAtClient(e.clientX, e.clientY);
         this._updateCursor(e.clientX, e.clientY);
+      } else if (this._singleMoved) {
+        this.viewport.pan(dx, dy);
       }
+
+      this._singleLastX = e.clientX;
+      this._singleLastY = e.clientY;
     }
   }
 
   _onPointerUp(e) {
     this._pointers.delete(e.pointerId);
 
-    if (e.pointerType === 'mouse' && e.button === 2) {
-      this._rightActive = false;
-      return;
-    }
-
     if (this._pointers.size === 0) {
-      if (!this._erasing) {
-        const dx = e.clientX - this._tapStartX;
-        const dy = e.clientY - this._tapStartY;
-        if (Math.sqrt(dx * dx + dy * dy) < 10) {
-          this._lastTapTime = performance.now();
-          this._lastTapX = e.clientX;
-          this._lastTapY = e.clientY;
-        }
+      if (!this._erasing && !this._singleMoved) {
+        this._lastTapTime = performance.now();
+        this._lastTapX = e.clientX;
+        this._lastTapY = e.clientY;
       }
       this._erasing = false;
-      this._panAfterPinch = false;
       this._hideCursor();
       return;
     }
 
     if (this._pointers.size < 2) {
       this._pinchDist = null;
-    }
-
-    if (this._pointers.size === 1 && this._panAfterPinch) {
-      this._erasing = false;
-      this._hideCursor();
     }
   }
 
