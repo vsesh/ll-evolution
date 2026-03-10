@@ -49,20 +49,27 @@ window.addEventListener('resize', () => {
 
 const btnFs = document.getElementById('btn-fullscreen');
 
-document.addEventListener('fullscreenchange', () => {
-  if (document.fullscreenElement) {
+function isFullscreen() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+
+function onFullscreenChange() {
+  if (isFullscreen()) {
     renderer.onResize();
     viewport.fitToScreen();
     btnFs.textContent = '\u2715';
   } else {
     btnFs.textContent = '\u26F6';
   }
-});
+}
 
-btnFs.addEventListener('pointerdown', e => {
+document.addEventListener('fullscreenchange', onFullscreenChange);
+document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+btnFs.addEventListener('click', e => {
   e.stopPropagation();
-  if (document.fullscreenElement) {
-    document.exitFullscreen().catch(() => {});
+  if (isFullscreen()) {
+    (document.exitFullscreen || document.webkitExitFullscreen || (() => {})).call(document).catch(() => {});
   } else {
     const el = document.documentElement;
     const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
