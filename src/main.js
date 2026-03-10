@@ -47,6 +47,13 @@ window.addEventListener('resize', () => {
   viewport.onResize();
 });
 
+document.addEventListener('fullscreenchange', () => {
+  if (document.fullscreenElement) {
+    renderer.onResize();
+    viewport.fitToScreen();
+  }
+});
+
 function requestFullscreen() {
   const el = document.documentElement;
   const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;

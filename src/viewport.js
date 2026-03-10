@@ -48,4 +48,11 @@ export class Viewport {
   onResize() {
     this._clamp();
   }
+
+  fitToScreen() {
+    this.scale = Math.min(window.innerWidth / GRID_W, window.innerHeight / GRID_H);
+    this.viewX = (GRID_W - window.innerWidth / this.scale) / 2;
+    this.viewY = (GRID_H - window.innerHeight / this.scale) / 2;
+    this._clamp();
+  }
 }
