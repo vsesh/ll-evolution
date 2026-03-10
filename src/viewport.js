@@ -5,6 +5,7 @@ export class Viewport {
     this.scale = 2;
     this.viewX = (GRID_W - window.innerWidth / this.scale) / 2;
     this.viewY = (GRID_H - window.innerHeight / this.scale) / 2;
+    this.scale = Math.max(this._minScale(), this.scale);
     this._clamp();
   }
 
@@ -23,10 +24,14 @@ export class Viewport {
     }
   }
 
+  _minScale() {
+    return Math.max(window.innerWidth / GRID_W, window.innerHeight / GRID_H);
+  }
+
   zoom(factor, cx, cy) {
     const gx = this.viewX + cx / this.scale;
     const gy = this.viewY + cy / this.scale;
-    this.scale = Math.max(1, Math.min(20, this.scale * factor));
+    this.scale = Math.max(this._minScale(), Math.min(20, this.scale * factor));
     this.viewX = gx - cx / this.scale;
     this.viewY = gy - cy / this.scale;
     this._clamp();
@@ -46,11 +51,12 @@ export class Viewport {
   }
 
   onResize() {
+    this.scale = Math.max(this._minScale(), this.scale);
     this._clamp();
   }
 
   fitToScreen() {
-    this.scale = Math.min(window.innerWidth / GRID_W, window.innerHeight / GRID_H);
+    this.scale = this._minScale();
     this.viewX = (GRID_W - window.innerWidth / this.scale) / 2;
     this.viewY = (GRID_H - window.innerHeight / this.scale) / 2;
     this._clamp();

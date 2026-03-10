@@ -148,7 +148,7 @@ export class Input {
   }
 
   _getEraseRadius() {
-    return Math.max(2, Math.round(30 / this.viewport.scale));
+    return Math.max(1, Math.round(15 / this.viewport.scale));
   }
 
   _eraseAtClient(cx, cy) {
