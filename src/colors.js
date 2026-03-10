@@ -17,7 +17,7 @@ export const COLOR_CSS = ['rgb(28,26,38)'];
 
 for (let i = 1; i <= NUM_COLORS; i++) {
   const hue = ((i - 1) * HUE_STEP) % 360;
-  const [r, g, b] = hslToRgb(hue, 50, 75);
+  const [r, g, b] = hslToRgb(hue, 65, 68);
   COLOR_RGBA[i] = (255 << 24) | (b << 16) | (g << 8) | r;
   COLOR_CSS.push(`rgb(${r},${g},${b})`);
 }
