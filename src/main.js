@@ -47,20 +47,25 @@ window.addEventListener('resize', () => {
   viewport.onResize();
 });
 
+const btnFs = document.getElementById('btn-fullscreen');
+
 document.addEventListener('fullscreenchange', () => {
   if (document.fullscreenElement) {
     renderer.onResize();
     viewport.fitToScreen();
+    btnFs.textContent = '\u2715';
+  } else {
+    btnFs.textContent = '\u26F6';
   }
 });
 
-function requestFullscreen() {
-  const el = document.documentElement;
-  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
-  if (req) req.call(el).catch(() => {});
-}
-
-document.getElementById('btn-fullscreen').addEventListener('pointerdown', e => {
+btnFs.addEventListener('pointerdown', e => {
   e.stopPropagation();
-  requestFullscreen();
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {});
+  } else {
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+    if (req) req.call(el).catch(() => {});
+  }
 });

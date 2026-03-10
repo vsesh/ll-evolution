@@ -2,10 +2,9 @@ import { GRID_W, GRID_H } from './simulation.js';
 
 export class Viewport {
   constructor() {
-    this.scale = 2;
-    this.viewX = (GRID_W - window.innerWidth / this.scale) / 2;
-    this.viewY = (GRID_H - window.innerHeight / this.scale) / 2;
-    this.scale = Math.max(this._minScale(), this.scale);
+    this.scale = 1;
+    this.viewX = 0;
+    this.viewY = 0;
     this._clamp();
   }
 

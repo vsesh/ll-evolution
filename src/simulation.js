@@ -1,7 +1,7 @@
 import { NUM_COLORS, FIGHT_DISTANCE, colorDistance } from './colors.js';
 
-export const GRID_W = 512;
-export const GRID_H = 288;
+export const GRID_W = window.innerWidth;
+export const GRID_H = window.innerHeight;
 
 const SPREAD_BASE = 0.25;
 const MUTATION_BASE = 0.001;
