@@ -1,3 +1,6 @@
+const DOUBLE_TAP_MS = 300;
+const DOUBLE_TAP_PX = 40;
+
 export class Input {
   constructor(canvas, viewport, simulation) {
     this.canvas = canvas;
@@ -11,6 +14,12 @@ export class Input {
 
     this._erasing = false;
     this._panAfterPinch = false;
+
+    this._lastTapTime = 0;
+    this._lastTapX = 0;
+    this._lastTapY = 0;
+    this._tapStartX = 0;
+    this._tapStartY = 0;
 
     this._rightActive = false;
     this._rightLastX = 0;
@@ -47,6 +56,7 @@ export class Input {
       this._erasing = false;
       this._panAfterPinch = true;
       this._hideCursor();
+      this._lastTapTime = 0;
       this._pinchDist = this._getPinchDist();
       const mid = this._getPinchMid();
       this._pinchMidX = mid.x;
@@ -61,10 +71,22 @@ export class Input {
       return;
     }
 
-    this._erasing = true;
-    this._panAfterPinch = false;
-    this._eraseAtClient(e.clientX, e.clientY);
-    this._showCursor(e.clientX, e.clientY);
+    this._tapStartX = e.clientX;
+    this._tapStartY = e.clientY;
+
+    const now = performance.now();
+    const dx = e.clientX - this._lastTapX;
+    const dy = e.clientY - this._lastTapY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const isDoubleTap = (now - this._lastTapTime) < DOUBLE_TAP_MS && dist < DOUBLE_TAP_PX;
+
+    if (isDoubleTap) {
+      this._erasing = true;
+      this._panAfterPinch = false;
+      this._lastTapTime = 0;
+      this._eraseAtClient(e.clientX, e.clientY);
+      this._showCursor(e.clientX, e.clientY);
+    }
   }
 
   _onPointerMove(e) {
@@ -116,6 +138,15 @@ export class Input {
     }
 
     if (this._pointers.size === 0) {
+      if (!this._erasing) {
+        const dx = e.clientX - this._tapStartX;
+        const dy = e.clientY - this._tapStartY;
+        if (Math.sqrt(dx * dx + dy * dy) < 10) {
+          this._lastTapTime = performance.now();
+          this._lastTapX = e.clientX;
+          this._lastTapY = e.clientY;
+        }
+      }
       this._erasing = false;
       this._panAfterPinch = false;
       this._hideCursor();
