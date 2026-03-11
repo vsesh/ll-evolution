@@ -19,7 +19,7 @@ if (!loaded) {
 
 let lastTick = performance.now();
 let lastSave = performance.now();
-const TICK_MS = 100;
+const TICK_MS = 25;
 const SAVE_MS = 10000;
 let rafId = null;
 let simRunning = true;
