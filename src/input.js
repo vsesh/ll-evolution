@@ -59,9 +59,8 @@ export class Input {
 
   _scratchAtClient(cx, cy) {
     const rect = this.canvas.getBoundingClientRect();
-    const gx = Math.floor(cx - rect.left);
-    const gy = Math.floor(cy - rect.top);
-    this.simulation.clearCircle(gx, gy, this._getScratchRadius());
+    const { x, y } = this.viewport.canvasToGrid(cx - rect.left, cy - rect.top);
+    this.simulation.clearCircle(x, y, this._getScratchRadius());
   }
 
   _showCursor(cx, cy) {
