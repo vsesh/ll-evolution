@@ -24,19 +24,6 @@ export class Simulation {
     }
   }
 
-  _idx(x, y) {
-    return y * GRID_W + x;
-  }
-
-  _countNeighbors(grid, x, y, color) {
-    let count = 0;
-    if (x > 0 && grid[this._idx(x - 1, y)] === color) count++;
-    if (x < GRID_W - 1 && grid[this._idx(x + 1, y)] === color) count++;
-    if (y > 0 && grid[this._idx(x, y - 1)] === color) count++;
-    if (y < GRID_H - 1 && grid[this._idx(x, y + 1)] === color) count++;
-    return count;
-  }
-
   step() {
     this.tick++;
     this.spreadChance = Math.max(0.05, Math.min(0.6,
@@ -52,10 +39,10 @@ export class Simulation {
     const mutate = this.mutationChance;
     const W = GRID_W;
     const H = GRID_H;
+    const FD = FIGHT_DISTANCE;
+    const NC = NUM_COLORS;
 
     next.set(grid);
-
-    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
 
     for (let y = 0; y < H; y++) {
       for (let x = 0; x < W; x++) {
@@ -64,19 +51,23 @@ export class Simulation {
         if (color === 0) continue;
 
         if (Math.random() < mutate) {
-          const delta = Math.random() < 0.5 ? -1 : 1;
-          let newColor = color + delta;
-          if (newColor < 1) newColor = NUM_COLORS;
-          if (newColor > NUM_COLORS) newColor = 1;
+          let newColor = color + (Math.random() < 0.5 ? -1 : 1);
+          if (newColor < 1) newColor = NC;
+          if (newColor > NC) newColor = 1;
           next[idx] = newColor;
           continue;
         }
 
+        const left  = x > 0       ? idx - 1 : -1;
+        const right = x < W - 1   ? idx + 1 : -1;
+        const up    = y > 0       ? idx - W : -1;
+        const down  = y < H - 1   ? idx + W : -1;
+
+        const neighbors = [left, right, up, down];
+
         for (let d = 0; d < 4; d++) {
-          const nx = x + dirs[d][0];
-          const ny = y + dirs[d][1];
-          if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
-          const nidx = ny * W + nx;
+          const nidx = neighbors[d];
+          if (nidx < 0) continue;
           const neighborColor = grid[nidx];
 
           if (neighborColor === 0) {
@@ -84,10 +75,22 @@ export class Simulation {
               next[nidx] = color;
             }
           } else if (neighborColor !== color) {
-            const dist = colorDistance(color, neighborColor);
-            if (dist > FIGHT_DISTANCE && Math.random() < 0.3) {
-              const myScore = this._countNeighbors(grid, x, y, color);
-              const theirScore = this._countNeighbors(grid, nx, ny, neighborColor);
+            const diff = color - neighborColor;
+            const absDiff = diff < 0 ? -diff : diff;
+            const dist = absDiff < NC - absDiff ? absDiff : NC - absDiff;
+            if (dist > FD) {
+              const nx = nidx % W;
+              const ny = (nidx / W) | 0;
+              let myScore = 0;
+              let theirScore = 0;
+              if (x > 0       && grid[idx  - 1] === color)         myScore++;
+              if (x < W - 1   && grid[idx  + 1] === color)         myScore++;
+              if (y > 0       && grid[idx  - W] === color)         myScore++;
+              if (y < H - 1   && grid[idx  + W] === color)         myScore++;
+              if (nx > 0      && grid[nidx - 1] === neighborColor) theirScore++;
+              if (nx < W - 1  && grid[nidx + 1] === neighborColor) theirScore++;
+              if (ny > 0      && grid[nidx - W] === neighborColor) theirScore++;
+              if (ny < H - 1  && grid[nidx + W] === neighborColor) theirScore++;
               if (myScore > theirScore) {
                 next[nidx] = color;
               } else if (theirScore > myScore) {

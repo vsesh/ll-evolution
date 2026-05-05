@@ -1,5 +1,5 @@
 export const NUM_COLORS = 16;
-export const FIGHT_DISTANCE = 6;
+export const FIGHT_DISTANCE = 3;
 
 const PALETTE = [
   [80,  30,  15],
