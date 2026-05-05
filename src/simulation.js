@@ -19,12 +19,8 @@ export class Simulation {
   }
 
   _seed() {
-    const count = 40;
-    for (let i = 0; i < count; i++) {
-      const x = Math.floor(Math.random() * GRID_W);
-      const y = Math.floor(Math.random() * GRID_H);
-      const color = Math.floor(Math.random() * NUM_COLORS) + 1;
-      this.grid[y * GRID_W + x] = color;
+    for (let i = 0; i < GRID_W * GRID_H; i++) {
+      this.grid[i] = Math.floor(Math.random() * NUM_COLORS) + 1;
     }
   }
 

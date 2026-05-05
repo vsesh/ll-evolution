@@ -1,27 +1,34 @@
 export const NUM_COLORS = 16;
 export const FIGHT_DISTANCE = 3;
 
-const HUE_STEP = 360 / NUM_COLORS;
-
-function hslToRgb(h, s, l) {
-  s /= 100;
-  l /= 100;
-  const k = n => (n + h / 30) % 12;
-  const a = s * Math.min(l, 1 - l);
-  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
-  return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)];
-}
+const PALETTE = [
+  [80,  30,  15],
+  [120, 50,  20],
+  [155, 68,  28],
+  [140, 80,  25],
+  [90,  70,  18],
+  [118, 93,  28],
+  [148, 118, 48],
+  [50,  35,  20],
+  [72,  52,  30],
+  [100, 75,  45],
+  [62,  56,  48],
+  [82,  72,  60],
+  [40,  50,  28],
+  [55,  65,  33],
+  [68,  24,  24],
+  [102, 35,  22],
+];
 
 export const COLOR_RGBA = new Uint32Array(NUM_COLORS + 1);
-export const COLOR_CSS = ['rgb(28,26,38)'];
+export const COLOR_CSS = ['rgb(20,15,10)'];
 
 for (let i = 1; i <= NUM_COLORS; i++) {
-  const hue = ((i - 1) * HUE_STEP) % 360;
-  const [r, g, b] = hslToRgb(hue, 65, 68);
+  const [r, g, b] = PALETTE[i - 1];
   COLOR_RGBA[i] = (255 << 24) | (b << 16) | (g << 8) | r;
   COLOR_CSS.push(`rgb(${r},${g},${b})`);
 }
-COLOR_RGBA[0] = (255 << 24) | (38 << 16) | (26 << 8) | 28;
+COLOR_RGBA[0] = (255 << 24) | (10 << 16) | (15 << 8) | 20;
 
 export function colorDistance(a, b) {
   const diff = Math.abs(a - b);
