@@ -1,7 +1,7 @@
 import { NUM_COLORS, FIGHT_DISTANCE } from './colors.js';
 
-export const WORLD_W = Math.min(window.innerWidth, 1280);
-export const WORLD_H = Math.min(window.innerHeight, 720);
+export const WORLD_W = Math.min(window.innerWidth, 844);
+export const WORLD_H = Math.min(window.innerHeight, 390);
 
 const SPREAD_BASE = 0.08;
 const MUTATION_BASE = 0.001;
