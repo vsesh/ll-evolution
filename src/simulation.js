@@ -1,7 +1,8 @@
 import { NUM_COLORS, FIGHT_DISTANCE, colorDistance } from './colors.js';
 
-export const GRID_W = Math.min(window.innerWidth, 430);
-export const GRID_H = Math.min(window.innerHeight, 932);
+const isMobile = window.innerWidth <= 768;
+export const GRID_W = isMobile ? Math.min(window.innerWidth, 430) : Math.min(window.innerWidth, 1920);
+export const GRID_H = isMobile ? Math.min(window.innerHeight, 932) : Math.min(window.innerHeight, 1080);
 
 const SPREAD_BASE = 0.08;
 const MUTATION_BASE = 0.001;
