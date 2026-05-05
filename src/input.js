@@ -5,9 +5,6 @@ export class Input {
     this.simulation = simulation;
 
     this._pointers = new Map();
-    this._pinchDist = null;
-    this._pinchMidX = 0;
-    this._pinchMidY = 0;
 
     this._cursorEl = document.getElementById('erase-cursor');
 
@@ -16,19 +13,11 @@ export class Input {
 
   _bind() {
     const cv = this.canvas;
-    cv.addEventListener('wheel', this._onWheel.bind(this), { passive: false });
     cv.addEventListener('pointerdown', this._onPointerDown.bind(this));
     cv.addEventListener('pointermove', this._onPointerMove.bind(this));
     cv.addEventListener('pointerup', this._onPointerUp.bind(this));
     cv.addEventListener('pointercancel', this._onPointerUp.bind(this));
     cv.addEventListener('contextmenu', e => e.preventDefault());
-  }
-
-  _onWheel(e) {
-    e.preventDefault();
-    const factor = e.deltaY < 0 ? 1.05 : 1 / 1.05;
-    const rect = this.canvas.getBoundingClientRect();
-    this.viewport.zoom(factor, e.clientX - rect.left, e.clientY - rect.top);
   }
 
   _onPointerDown(e) {
@@ -38,10 +27,6 @@ export class Input {
 
     if (this._pointers.size >= 2) {
       this._hideCursor();
-      this._pinchDist = this._getPinchDist();
-      const mid = this._getPinchMid();
-      this._pinchMidX = mid.x;
-      this._pinchMidY = mid.y;
       return;
     }
 
@@ -53,24 +38,7 @@ export class Input {
     if (!this._pointers.has(e.pointerId)) return;
     this._pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    if (this._pointers.size >= 2) {
-      const newDist = this._getPinchDist();
-      if (this._pinchDist && newDist > 0) {
-        const factor = newDist / this._pinchDist;
-        const rect = this.canvas.getBoundingClientRect();
-        const mid = this._getPinchMid();
-        this.viewport.zoom(factor, mid.x - rect.left, mid.y - rect.top);
-      }
-      this._pinchDist = newDist;
-
-      const mid = this._getPinchMid();
-      const dx = mid.x - this._pinchMidX;
-      const dy = mid.y - this._pinchMidY;
-      if (dx !== 0 || dy !== 0) this.viewport.pan(dx, dy);
-      this._pinchMidX = mid.x;
-      this._pinchMidY = mid.y;
-      return;
-    }
+    if (this._pointers.size >= 2) return;
 
     if (this._pointers.size === 1) {
       this._scratchAtClient(e.clientX, e.clientY);
@@ -83,34 +51,17 @@ export class Input {
     if (this._pointers.size === 0) {
       this._hideCursor();
     }
-    if (this._pointers.size < 2) {
-      this._pinchDist = null;
-    }
-  }
-
-  _getPinchDist() {
-    const pts = [...this._pointers.values()];
-    const dx = pts[0].x - pts[1].x;
-    const dy = pts[0].y - pts[1].y;
-    return Math.sqrt(dx * dx + dy * dy);
-  }
-
-  _getPinchMid() {
-    const pts = [...this._pointers.values()];
-    return {
-      x: (pts[0].x + pts[1].x) / 2,
-      y: (pts[0].y + pts[1].y) / 2,
-    };
   }
 
   _getScratchRadius() {
-    return Math.max(5, Math.round(20 / this.viewport.scale));
+    return 8;
   }
 
   _scratchAtClient(cx, cy) {
     const rect = this.canvas.getBoundingClientRect();
-    const { x, y } = this.viewport.canvasToGrid(cx - rect.left, cy - rect.top);
-    this.simulation.clearCircle(x, y, this._getScratchRadius());
+    const gx = Math.floor(cx - rect.left);
+    const gy = Math.floor(cy - rect.top);
+    this.simulation.clearCircle(gx, gy, this._getScratchRadius());
   }
 
   _showCursor(cx, cy) {
@@ -123,7 +74,7 @@ export class Input {
   }
 
   _updateCursor(cx, cy) {
-    const sizePx = this._getScratchRadius() * this.viewport.scale * 2;
+    const sizePx = this._getScratchRadius() * 2;
     this._cursorEl.style.width = sizePx + 'px';
     this._cursorEl.style.height = sizePx + 'px';
     this._cursorEl.style.left = cx + 'px';

@@ -23,32 +23,6 @@
       touch-action: none;
     }
 
-    #btn-fullscreen {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 44px;
-      height: 44px;
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.35);
-      border-radius: 10px;
-      color: #fff;
-      font-size: 20px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
-      transition: background 0.15s;
-    }
-
-    #btn-fullscreen:hover {
-      background: rgba(255, 255, 255, 0.28);
-    }
-
     #erase-cursor {
       position: fixed;
       pointer-events: none;
@@ -63,7 +37,6 @@
 </head>
 <body>
   <canvas id="canvas"></canvas>
-  <button id="btn-fullscreen" title="Fullscreen">&#x26F6;</button>
   <div id="erase-cursor"></div>
   <script type="module" src="src/main.js"></script>
 </body>

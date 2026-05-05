@@ -28,35 +28,4 @@ requestAnimationFrame(loop);
 
 window.addEventListener('resize', () => {
   renderer.onResize();
-  viewport.onResize();
-});
-
-const btnFs = document.getElementById('btn-fullscreen');
-
-function isFullscreen() {
-  return !!(document.fullscreenElement || document.webkitFullscreenElement);
-}
-
-function onFullscreenChange() {
-  if (isFullscreen()) {
-    renderer.onResize();
-    viewport.fitToScreen();
-    btnFs.textContent = '\u2715';
-  } else {
-    btnFs.textContent = '\u26F6';
-  }
-}
-
-document.addEventListener('fullscreenchange', onFullscreenChange);
-document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-
-btnFs.addEventListener('click', e => {
-  e.stopPropagation();
-  if (isFullscreen()) {
-    (document.exitFullscreen || document.webkitExitFullscreen || (() => {})).call(document).catch(() => {});
-  } else {
-    const el = document.documentElement;
-    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
-    if (req) req.call(el).catch(() => {});
-  }
 });
