@@ -28,7 +28,7 @@ export class Eyes {
       eyeCanvas.height = EYE_SIZE;
       const eyeCtx = eyeCanvas.getContext('2d');
 
-      const count = 3 + Math.floor(Math.random() * 4);
+      const count = 9 + Math.floor(Math.random() * 12);
 
       for (let i = 0; i < count; i++) {
         const eyeIdx = Math.floor(Math.random() * (COLS * ROWS));
