@@ -1,29 +1,13 @@
-const DOUBLE_TAP_MS = 300;
-const DOUBLE_TAP_PX = 40;
-const DRAG_THRESHOLD = 5;
-
 export class Input {
-  constructor(canvas, viewport, simulation) {
+  constructor(canvas, viewport, cover) {
     this.canvas = canvas;
     this.viewport = viewport;
-    this.simulation = simulation;
+    this.cover = cover;
 
     this._pointers = new Map();
     this._pinchDist = null;
     this._pinchMidX = 0;
     this._pinchMidY = 0;
-
-    this._erasing = false;
-
-    this._singleLastX = 0;
-    this._singleLastY = 0;
-    this._singleStartX = 0;
-    this._singleStartY = 0;
-    this._singleMoved = false;
-
-    this._lastTapTime = 0;
-    this._lastTapX = 0;
-    this._lastTapY = 0;
 
     this._cursorEl = document.getElementById('erase-cursor');
 
@@ -53,9 +37,7 @@ export class Input {
     this._pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
     if (this._pointers.size >= 2) {
-      this._erasing = false;
       this._hideCursor();
-      this._lastTapTime = 0;
       this._pinchDist = this._getPinchDist();
       const mid = this._getPinchMid();
       this._pinchMidX = mid.x;
@@ -63,24 +45,8 @@ export class Input {
       return;
     }
 
-    this._singleStartX = e.clientX;
-    this._singleStartY = e.clientY;
-    this._singleLastX = e.clientX;
-    this._singleLastY = e.clientY;
-    this._singleMoved = false;
-
-    const now = performance.now();
-    const dx = e.clientX - this._lastTapX;
-    const dy = e.clientY - this._lastTapY;
-    const isDoubleTap = (now - this._lastTapTime) < DOUBLE_TAP_MS
-      && Math.sqrt(dx * dx + dy * dy) < DOUBLE_TAP_PX;
-
-    if (isDoubleTap) {
-      this._erasing = true;
-      this._lastTapTime = 0;
-      this._eraseAtClient(e.clientX, e.clientY);
-      this._showCursor(e.clientX, e.clientY);
-    }
+    this._scratchAtClient(e.clientX, e.clientY);
+    this._showCursor(e.clientX, e.clientY);
   }
 
   _onPointerMove(e) {
@@ -107,44 +73,16 @@ export class Input {
     }
 
     if (this._pointers.size === 1) {
-      const dx = e.clientX - this._singleLastX;
-      const dy = e.clientY - this._singleLastY;
-      const totalDx = e.clientX - this._singleStartX;
-      const totalDy = e.clientY - this._singleStartY;
-
-      if (!this._singleMoved && Math.sqrt(totalDx * totalDx + totalDy * totalDy) > DRAG_THRESHOLD) {
-        this._singleMoved = true;
-        if (!this._erasing) {
-          this._lastTapTime = 0;
-        }
-      }
-
-      if (this._erasing) {
-        this._eraseAtClient(e.clientX, e.clientY);
-        this._updateCursor(e.clientX, e.clientY);
-      } else if (this._singleMoved) {
-        this.viewport.pan(dx, dy);
-      }
-
-      this._singleLastX = e.clientX;
-      this._singleLastY = e.clientY;
+      this._scratchAtClient(e.clientX, e.clientY);
+      this._updateCursor(e.clientX, e.clientY);
     }
   }
 
   _onPointerUp(e) {
     this._pointers.delete(e.pointerId);
-
     if (this._pointers.size === 0) {
-      if (!this._erasing && !this._singleMoved) {
-        this._lastTapTime = performance.now();
-        this._lastTapX = e.clientX;
-        this._lastTapY = e.clientY;
-      }
-      this._erasing = false;
       this._hideCursor();
-      return;
     }
-
     if (this._pointers.size < 2) {
       this._pinchDist = null;
     }
@@ -165,14 +103,14 @@ export class Input {
     };
   }
 
-  _getEraseRadius() {
-    return Math.max(1, Math.round(15 / this.viewport.scale));
+  _getScratchRadius() {
+    return Math.max(5, Math.round(20 / this.viewport.scale));
   }
 
-  _eraseAtClient(cx, cy) {
+  _scratchAtClient(cx, cy) {
     const rect = this.canvas.getBoundingClientRect();
     const { x, y } = this.viewport.canvasToGrid(cx - rect.left, cy - rect.top);
-    this.simulation.clearCircle(x, y, this._getEraseRadius());
+    this.cover.scratch(x, y, this._getScratchRadius());
   }
 
   _showCursor(cx, cy) {
@@ -185,7 +123,7 @@ export class Input {
   }
 
   _updateCursor(cx, cy) {
-    const sizePx = this._getEraseRadius() * this.viewport.scale * 2;
+    const sizePx = this._getScratchRadius() * this.viewport.scale * 2;
     this._cursorEl.style.width = sizePx + 'px';
     this._cursorEl.style.height = sizePx + 'px';
     this._cursorEl.style.left = cx + 'px';

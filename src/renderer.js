@@ -21,53 +21,52 @@ export class Renderer {
     this._resize();
   }
 
-  render(grid, viewport) {
+  render(grid, cover, viewport) {
     const { viewX, viewY, scale } = viewport;
     const cw = this.canvas.width;
     const ch = this.canvas.height;
     const pixels = this._pixels;
-    const len = pixels.length;
+    const coverOp = cover.opacity;
+    const coverColors = cover.colors;
+
+    const blendPixel = (outIdx, gx, gy) => {
+      if (gx < 0 || gx >= GRID_W || gy < 0 || gy >= GRID_H) {
+        pixels[outIdx] = 0xFF000000;
+        return;
+      }
+      const gi = gy * GRID_W + gx;
+      const op = coverOp[gi];
+      if (op === 0) {
+        pixels[outIdx] = COLOR_RGBA[grid[gi]];
+      } else if (op >= 254) {
+        pixels[outIdx] = coverColors[gi];
+      } else {
+        const bg = COLOR_RGBA[grid[gi]];
+        const cv = coverColors[gi];
+        const inv = 255 - op;
+        const r = ((bg & 0xFF) * inv + (cv & 0xFF) * op) >> 8;
+        const g = (((bg >> 8) & 0xFF) * inv + ((cv >> 8) & 0xFF) * op) >> 8;
+        const b = (((bg >> 16) & 0xFF) * inv + ((cv >> 16) & 0xFF) * op) >> 8;
+        pixels[outIdx] = (255 << 24) | (b << 16) | (g << 8) | r;
+      }
+    };
 
     if (scale >= 1) {
       const cellSize = scale;
       for (let cy = 0; cy < ch; cy++) {
         const gy = Math.floor(viewY + cy / cellSize);
-        if (gy < 0 || gy >= GRID_H) {
-          for (let cx = 0; cx < cw; cx++) {
-            pixels[cy * cw + cx] = 0xFF000000;
-          }
-          continue;
-        }
-        const rowBase = gy * GRID_W;
         const rowOut = cy * cw;
         for (let cx = 0; cx < cw; cx++) {
-          const gx = Math.floor(viewX + cx / cellSize);
-          if (gx < 0 || gx >= GRID_W) {
-            pixels[rowOut + cx] = 0xFF000000;
-          } else {
-            pixels[rowOut + cx] = COLOR_RGBA[grid[rowBase + gx]];
-          }
+          blendPixel(rowOut + cx, Math.floor(viewX + cx / cellSize), gy);
         }
       }
     } else {
       const step = 1 / scale;
       for (let cy = 0; cy < ch; cy++) {
         const gy = Math.floor(viewY + cy * step);
-        if (gy < 0 || gy >= GRID_H) {
-          for (let cx = 0; cx < cw; cx++) {
-            pixels[cy * cw + cx] = 0xFF000000;
-          }
-          continue;
-        }
-        const rowBase = gy * GRID_W;
         const rowOut = cy * cw;
         for (let cx = 0; cx < cw; cx++) {
-          const gx = Math.floor(viewX + cx * step);
-          if (gx < 0 || gx >= GRID_W) {
-            pixels[rowOut + cx] = 0xFF000000;
-          } else {
-            pixels[rowOut + cx] = COLOR_RGBA[grid[rowBase + gx]];
-          }
+          blendPixel(rowOut + cx, Math.floor(viewX + cx * step), gy);
         }
       }
     }
