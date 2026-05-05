@@ -85,7 +85,7 @@ export class Simulation {
             }
           } else if (neighborColor !== color) {
             const dist = colorDistance(color, neighborColor);
-            if (dist > FIGHT_DISTANCE) {
+            if (dist > FIGHT_DISTANCE && Math.random() < 0.3) {
               const myScore = this._countNeighbors(grid, x, y, color);
               const theirScore = this._countNeighbors(grid, nx, ny, neighborColor);
               if (myScore > theirScore) {
