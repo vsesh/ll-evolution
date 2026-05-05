@@ -1,5 +1,5 @@
 import { COLOR_RGBA } from './colors.js';
-import { GRID_W, GRID_H } from './simulation.js';
+import { WORLD_W, WORLD_H } from './world.js';
 
 export class Renderer {
   constructor(canvas) {
@@ -28,10 +28,10 @@ export class Renderer {
     const pixels = this._pixels;
 
     const drawPixel = (outIdx, gx, gy) => {
-      if (gx < 0 || gx >= GRID_W || gy < 0 || gy >= GRID_H) {
+      if (gx < 0 || gx >= WORLD_W || gy < 0 || gy >= WORLD_H) {
         pixels[outIdx] = 0xFF000000;
       } else {
-        const gi = gy * GRID_W + gx;
+        const gi = gy * WORLD_W + gx;
         const c = grid[gi];
         pixels[outIdx] = c === 0 ? eyesBg[gi] : COLOR_RGBA[c];
       }

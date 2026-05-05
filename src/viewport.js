@@ -1,4 +1,4 @@
-import { GRID_W, GRID_H } from './simulation.js';
+import { WORLD_W, WORLD_H } from './world.js';
 
 export class Viewport {
   constructor() {
@@ -11,20 +11,20 @@ export class Viewport {
   _clamp() {
     const visW = window.innerWidth / this.scale;
     const visH = window.innerHeight / this.scale;
-    if (visW >= GRID_W) {
-      this.viewX = (GRID_W - visW) / 2;
+    if (visW >= WORLD_W) {
+      this.viewX = (WORLD_W - visW) / 2;
     } else {
-      this.viewX = Math.max(0, Math.min(GRID_W - visW, this.viewX));
+      this.viewX = Math.max(0, Math.min(WORLD_W - visW, this.viewX));
     }
-    if (visH >= GRID_H) {
-      this.viewY = (GRID_H - visH) / 2;
+    if (visH >= WORLD_H) {
+      this.viewY = (WORLD_H - visH) / 2;
     } else {
-      this.viewY = Math.max(0, Math.min(GRID_H - visH, this.viewY));
+      this.viewY = Math.max(0, Math.min(WORLD_H - visH, this.viewY));
     }
   }
 
   _minScale() {
-    return Math.max(window.innerWidth / GRID_W, window.innerHeight / GRID_H);
+    return Math.max(window.innerWidth / WORLD_W, window.innerHeight / WORLD_H);
   }
 
   zoom(factor, cx, cy) {
@@ -56,8 +56,8 @@ export class Viewport {
 
   fitToScreen() {
     this.scale = this._minScale();
-    this.viewX = (GRID_W - window.innerWidth / this.scale) / 2;
-    this.viewY = (GRID_H - window.innerHeight / this.scale) / 2;
+    this.viewX = (WORLD_W - window.innerWidth / this.scale) / 2;
+    this.viewY = (WORLD_H - window.innerHeight / this.scale) / 2;
     this._clamp();
   }
 }

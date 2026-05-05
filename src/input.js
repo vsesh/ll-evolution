@@ -1,8 +1,8 @@
 export class Input {
-  constructor(canvas, viewport, simulation) {
+  constructor(canvas, viewport, world) {
     this.canvas = canvas;
     this.viewport = viewport;
-    this.simulation = simulation;
+    this.world = world;
 
     this._pointers = new Map();
 
@@ -60,7 +60,7 @@ export class Input {
   _scratchAtClient(cx, cy) {
     const rect = this.canvas.getBoundingClientRect();
     const { x, y } = this.viewport.canvasToGrid(cx - rect.left, cy - rect.top);
-    this.simulation.clearCircle(x, y, this._getScratchRadius());
+    this.world.clearCircle(x, y, this._getScratchRadius());
   }
 
   _showCursor(cx, cy) {

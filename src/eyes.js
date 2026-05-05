@@ -1,4 +1,4 @@
-import { GRID_W, GRID_H } from './simulation.js';
+import { WORLD_W, WORLD_H } from './world.js';
 
 const COLS = 5;
 const ROWS = 5;
@@ -7,7 +7,7 @@ const BG_COLOR = 0xFF140F0A;
 
 export class Eyes {
   constructor() {
-    this.bg = new Uint32Array(GRID_W * GRID_H).fill(BG_COLOR);
+    this.bg = new Uint32Array(WORLD_W * WORLD_H).fill(BG_COLOR);
     this._load();
   }
 
@@ -41,14 +41,14 @@ export class Eyes {
         const raw = eyeCtx.getImageData(0, 0, EYE_SIZE, EYE_SIZE).data;
         const eyePx = new Uint32Array(raw.buffer);
 
-        const gx = Math.floor(Math.random() * (GRID_W - EYE_SIZE));
-        const gy = Math.floor(Math.random() * (GRID_H - EYE_SIZE));
+        const gx = Math.floor(Math.random() * (WORLD_W - EYE_SIZE));
+        const gy = Math.floor(Math.random() * (WORLD_H - EYE_SIZE));
 
         for (let py = 0; py < EYE_SIZE; py++) {
           for (let px = 0; px < EYE_SIZE; px++) {
             const p = eyePx[py * EYE_SIZE + px];
             if ((p >>> 24) > 20) {
-              this.bg[(gy + py) * GRID_W + (gx + px)] = p;
+              this.bg[(gy + py) * WORLD_W + (gx + px)] = p;
             }
           }
         }
