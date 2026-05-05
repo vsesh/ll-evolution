@@ -3,7 +3,7 @@ import { WORLD_W, WORLD_H } from './world.js';
 const COLS = 5;
 const ROWS = 5;
 const EYE_SIZE = 50;
-const BG_COLOR = 0xFF140F0A;
+const BG_COLOR = 0xFF000000;
 
 export class Eyes {
   constructor() {
