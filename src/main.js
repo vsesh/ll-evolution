@@ -2,15 +2,13 @@ import { Simulation } from './simulation.js';
 import { Renderer } from './renderer.js';
 import { Viewport } from './viewport.js';
 import { Input } from './input.js';
-import { Cover } from './cover.js';
 
 const canvas = document.getElementById('canvas');
 
 const simulation = new Simulation();
-const cover = new Cover();
 const viewport = new Viewport();
 const renderer = new Renderer(canvas);
-const input = new Input(canvas, viewport, cover);
+const input = new Input(canvas, viewport, simulation);
 
 let lastTick = performance.now();
 const TICK_MS = 25;
@@ -20,10 +18,9 @@ function loop(now) {
   if (dt >= TICK_MS) {
     lastTick = now - (dt % TICK_MS);
     simulation.step();
-    cover.step();
   }
 
-  renderer.render(simulation.grid, cover, viewport);
+  renderer.render(simulation.grid, viewport);
   requestAnimationFrame(loop);
 }
 
