@@ -1,4 +1,4 @@
-import { NUM_COLORS, FIGHT_DISTANCE, colorDistance } from './colors.js';
+import { NUM_COLORS, FIGHT_DISTANCE } from './colors.js';
 
 export const GRID_W = Math.min(window.innerWidth, 1280);
 export const GRID_H = Math.min(window.innerHeight, 720);
@@ -7,6 +7,14 @@ const SPREAD_BASE = 0.08;
 const MUTATION_BASE = 0.001;
 const SPREAD_VARIANCE = 0.04;
 const MUTATION_VARIANCE = 0.0008;
+
+let _rng = (Math.random() * 0xFFFFFFFF) >>> 0 || 1;
+function rng() {
+  _rng ^= _rng << 13;
+  _rng ^= _rng >>> 17;
+  _rng ^= _rng << 5;
+  return (_rng >>> 0) / 0x100000000;
+}
 
 export class Simulation {
   constructor() {
@@ -20,17 +28,17 @@ export class Simulation {
 
   _seed() {
     for (let i = 0; i < GRID_W * GRID_H; i++) {
-      this.grid[i] = Math.floor(Math.random() * NUM_COLORS) + 1;
+      this.grid[i] = (rng() * NUM_COLORS | 0) + 1;
     }
   }
 
   step() {
     this.tick++;
     this.spreadChance = Math.max(0.05, Math.min(0.6,
-      SPREAD_BASE + (Math.random() - 0.5) * 2 * SPREAD_VARIANCE
+      SPREAD_BASE + (rng() - 0.5) * 2 * SPREAD_VARIANCE
     ));
     this.mutationChance = Math.max(0.0001, Math.min(0.005,
-      MUTATION_BASE + (Math.random() - 0.5) * 2 * MUTATION_VARIANCE
+      MUTATION_BASE + (rng() - 0.5) * 2 * MUTATION_VARIANCE
     ));
 
     const grid = this.grid;
@@ -41,61 +49,93 @@ export class Simulation {
     const H = GRID_H;
     const FD = FIGHT_DISTANCE;
     const NC = NUM_COLORS;
+    const spreadInt = (spread * 0x100000000) >>> 0;
+    const mutateInt = (mutate * 0x100000000) >>> 0;
 
     next.set(grid);
 
     for (let y = 0; y < H; y++) {
+      const rowIdx = y * W;
+      const hasUp   = y > 0;
+      const hasDown = y < H - 1;
       for (let x = 0; x < W; x++) {
-        const idx = y * W + x;
+        const idx = rowIdx + x;
         const color = grid[idx];
         if (color === 0) continue;
 
-        if (Math.random() < mutate) {
-          let newColor = color + (Math.random() < 0.5 ? -1 : 1);
-          if (newColor < 1) newColor = NC;
-          if (newColor > NC) newColor = 1;
-          next[idx] = newColor;
+        _rng ^= _rng << 13; _rng ^= _rng >>> 17; _rng ^= _rng << 5;
+        if ((_rng >>> 0) < mutateInt) {
+          _rng ^= _rng << 13; _rng ^= _rng >>> 17; _rng ^= _rng << 5;
+          let nc = color + ((_rng & 1) ? 1 : -1);
+          if (nc < 1) nc = NC;
+          if (nc > NC) nc = 1;
+          next[idx] = nc;
           continue;
         }
 
-        const left  = x > 0       ? idx - 1 : -1;
-        const right = x < W - 1   ? idx + 1 : -1;
-        const up    = y > 0       ? idx - W : -1;
-        const down  = y < H - 1   ? idx + W : -1;
+        const hasLeft  = x > 0;
+        const hasRight = x < W - 1;
+        let nidx, nc2, diff, absDiff, dist, ms, ts;
 
-        const neighbors = [left, right, up, down];
-
-        for (let d = 0; d < 4; d++) {
-          const nidx = neighbors[d];
-          if (nidx < 0) continue;
-          const neighborColor = grid[nidx];
-
-          if (neighborColor === 0) {
-            if (Math.random() < spread) {
-              next[nidx] = color;
-            }
-          } else if (neighborColor !== color) {
-            const diff = color - neighborColor;
-            const absDiff = diff < 0 ? -diff : diff;
-            const dist = absDiff < NC - absDiff ? absDiff : NC - absDiff;
+        if (hasLeft) {
+          nidx = idx - 1; nc2 = grid[nidx];
+          if (nc2 === 0) {
+            _rng ^= _rng << 13; _rng ^= _rng >>> 17; _rng ^= _rng << 5;
+            if ((_rng >>> 0) < spreadInt) next[nidx] = color;
+          } else if (nc2 !== color) {
+            diff = color - nc2; absDiff = diff < 0 ? -diff : diff;
+            dist = absDiff < NC - absDiff ? absDiff : NC - absDiff;
             if (dist > FD) {
-              const nx = nidx % W;
-              const ny = (nidx / W) | 0;
-              let myScore = 0;
-              let theirScore = 0;
-              if (x > 0       && grid[idx  - 1] === color)         myScore++;
-              if (x < W - 1   && grid[idx  + 1] === color)         myScore++;
-              if (y > 0       && grid[idx  - W] === color)         myScore++;
-              if (y < H - 1   && grid[idx  + W] === color)         myScore++;
-              if (nx > 0      && grid[nidx - 1] === neighborColor) theirScore++;
-              if (nx < W - 1  && grid[nidx + 1] === neighborColor) theirScore++;
-              if (ny > 0      && grid[nidx - W] === neighborColor) theirScore++;
-              if (ny < H - 1  && grid[nidx + W] === neighborColor) theirScore++;
-              if (myScore > theirScore) {
-                next[nidx] = color;
-              } else if (theirScore > myScore) {
-                next[idx] = neighborColor;
-              }
+              ms = (hasLeft&&grid[idx-1]===color?1:0)+(hasRight&&grid[idx+1]===color?1:0)+(hasUp&&grid[idx-W]===color?1:0)+(hasDown&&grid[idx+W]===color?1:0);
+              ts = (x>1&&grid[nidx-1]===nc2?1:0)+(grid[nidx+1]===nc2?1:0)+(hasUp&&grid[nidx-W]===nc2?1:0)+(hasDown&&grid[nidx+W]===nc2?1:0);
+              if (ms > ts) next[nidx] = color; else if (ts > ms) next[idx] = nc2;
+            }
+          }
+        }
+        if (hasRight) {
+          nidx = idx + 1; nc2 = grid[nidx];
+          if (nc2 === 0) {
+            _rng ^= _rng << 13; _rng ^= _rng >>> 17; _rng ^= _rng << 5;
+            if ((_rng >>> 0) < spreadInt) next[nidx] = color;
+          } else if (nc2 !== color) {
+            diff = color - nc2; absDiff = diff < 0 ? -diff : diff;
+            dist = absDiff < NC - absDiff ? absDiff : NC - absDiff;
+            if (dist > FD) {
+              ms = (hasLeft&&grid[idx-1]===color?1:0)+(hasRight&&grid[idx+1]===color?1:0)+(hasUp&&grid[idx-W]===color?1:0)+(hasDown&&grid[idx+W]===color?1:0);
+              ts = (grid[nidx-1]===nc2?1:0)+(x<W-2&&grid[nidx+1]===nc2?1:0)+(hasUp&&grid[nidx-W]===nc2?1:0)+(hasDown&&grid[nidx+W]===nc2?1:0);
+              if (ms > ts) next[nidx] = color; else if (ts > ms) next[idx] = nc2;
+            }
+          }
+        }
+        if (hasUp) {
+          nidx = idx - W; nc2 = grid[nidx];
+          if (nc2 === 0) {
+            _rng ^= _rng << 13; _rng ^= _rng >>> 17; _rng ^= _rng << 5;
+            if ((_rng >>> 0) < spreadInt) next[nidx] = color;
+          } else if (nc2 !== color) {
+            diff = color - nc2; absDiff = diff < 0 ? -diff : diff;
+            dist = absDiff < NC - absDiff ? absDiff : NC - absDiff;
+            if (dist > FD) {
+              const nx2 = nidx % W;
+              ms = (hasLeft&&grid[idx-1]===color?1:0)+(hasRight&&grid[idx+1]===color?1:0)+(hasUp&&grid[idx-W]===color?1:0)+(hasDown&&grid[idx+W]===color?1:0);
+              ts = (nx2>0&&grid[nidx-1]===nc2?1:0)+(nx2<W-1&&grid[nidx+1]===nc2?1:0)+(y>1&&grid[nidx-W]===nc2?1:0)+(grid[nidx+W]===nc2?1:0);
+              if (ms > ts) next[nidx] = color; else if (ts > ms) next[idx] = nc2;
+            }
+          }
+        }
+        if (hasDown) {
+          nidx = idx + W; nc2 = grid[nidx];
+          if (nc2 === 0) {
+            _rng ^= _rng << 13; _rng ^= _rng >>> 17; _rng ^= _rng << 5;
+            if ((_rng >>> 0) < spreadInt) next[nidx] = color;
+          } else if (nc2 !== color) {
+            diff = color - nc2; absDiff = diff < 0 ? -diff : diff;
+            dist = absDiff < NC - absDiff ? absDiff : NC - absDiff;
+            if (dist > FD) {
+              const nx2 = nidx % W;
+              ms = (hasLeft&&grid[idx-1]===color?1:0)+(hasRight&&grid[idx+1]===color?1:0)+(hasUp&&grid[idx-W]===color?1:0)+(hasDown&&grid[idx+W]===color?1:0);
+              ts = (nx2>0&&grid[nidx-1]===nc2?1:0)+(nx2<W-1&&grid[nidx+1]===nc2?1:0)+(grid[nidx-W]===nc2?1:0)+(y<H-2&&grid[nidx+W]===nc2?1:0);
+              if (ms > ts) next[nidx] = color; else if (ts > ms) next[idx] = nc2;
             }
           }
         }
