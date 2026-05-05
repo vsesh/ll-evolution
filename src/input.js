@@ -54,7 +54,7 @@ export class Input {
   }
 
   _getScratchRadius() {
-    return 8;
+    return 10;
   }
 
   _scratchAtClient(cx, cy) {

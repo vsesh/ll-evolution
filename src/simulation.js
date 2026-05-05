@@ -3,9 +3,9 @@ import { NUM_COLORS, FIGHT_DISTANCE, colorDistance } from './colors.js';
 export const GRID_W = Math.min(window.innerWidth, 430);
 export const GRID_H = Math.min(window.innerHeight, 932);
 
-const SPREAD_BASE = 0.25;
+const SPREAD_BASE = 0.08;
 const MUTATION_BASE = 0.001;
-const SPREAD_VARIANCE = 0.15;
+const SPREAD_VARIANCE = 0.04;
 const MUTATION_VARIANCE = 0.0008;
 
 export class Simulation {
