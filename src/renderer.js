@@ -21,7 +21,7 @@ export class Renderer {
     this._resize();
   }
 
-  render(grid, viewport) {
+  render(grid, eyesBg, viewport) {
     const { viewX, viewY, scale } = viewport;
     const cw = this.canvas.width;
     const ch = this.canvas.height;
@@ -31,7 +31,9 @@ export class Renderer {
       if (gx < 0 || gx >= GRID_W || gy < 0 || gy >= GRID_H) {
         pixels[outIdx] = 0xFF000000;
       } else {
-        pixels[outIdx] = COLOR_RGBA[grid[gy * GRID_W + gx]];
+        const gi = gy * GRID_W + gx;
+        const c = grid[gi];
+        pixels[outIdx] = c === 0 ? eyesBg[gi] : COLOR_RGBA[c];
       }
     };
 
