@@ -21,7 +21,7 @@ export class Renderer {
     this._resize();
   }
 
-  render(grid, eyesBg, viewport) {
+  render(grid, eyesBg, viewport, fallingItems) {
     const { viewX, viewY, scale } = viewport;
     const cw = this.canvas.width;
     const ch = this.canvas.height;
@@ -58,5 +58,7 @@ export class Renderer {
     }
 
     this.ctx.putImageData(this._imageData, 0, 0);
+    fallingItems.update();
+    fallingItems.draw(this.ctx);
   }
 }
